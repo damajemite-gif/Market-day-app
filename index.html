@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+<title>Market Day</title>
+<meta name="theme-color" content="#1C2541" />
+<link rel="manifest" href="manifest.json" />
+<link rel="icon" href="icons/icon-192.png" />
+<link rel="apple-touch-icon" href="icons/icon-192.png" />
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@500;700&display=swap');
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    min-height: 100vh;
+    background: #1C2541;
+    background-image:
+      radial-gradient(circle at 15% 10%, rgba(58,74,122,0.55), transparent 45%),
+      radial-gradient(circle at 85% 90%, rgba(232,163,61,0.12), transparent 40%);
+    font-family: 'Inter', sans-serif;
+    padding: 48px 16px;
+  }
+  .wrap { max-width: 480px; margin: 0 auto; }
+  .eyebrow {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px; letter-spacing: 0.12em; text-transform: uppercase;
+    color: #E8A33D; margin: 0; text-align: center;
+  }
+  .card {
+    background: #F3EFE6; border-radius: 20px; padding: 36px 30px;
+    text-align: center; box-shadow: 0 20px 50px rgba(0,0,0,0.25);
+  }
+  .beads { display: flex; gap: 10px; justify-content: center; margin-bottom: 22px; }
+  .bead {
+    width: 14px; height: 14px; border-radius: 50%;
+    background: rgba(28,37,65,0.12); transition: all 0.3s ease;
+  }
+  .bead.active { background: #E8A33D; box-shadow: 0 0 0 4px rgba(232,163,61,0.18); }
+  .eyebrow2 {
+    font-family: 'JetBrains Mono', monospace; font-size: 12px; letter-spacing: 0.08em;
+    text-transform: uppercase; color: #8A8578; margin: 0 0 6px 0; text-align: center;
+  }
+  .headline {
+    font-family: 'Fraunces', serif; font-weight: 600; font-size: 34px;
+    color: #1C2541; margin: 0 0 22px 0; line-height: 1.15;
+  }
+  .caption-box {
+    display: flex; align-items: center; gap: 12px; background: #FFFFFF;
+    border: 1.5px solid; border-radius: 14px; padding: 16px 18px; text-align: left;
+  }
+  .caption-text { font-size: 14.5px; color: #3A362E; line-height: 1.4; }
+  .btn {
+    border: none; cursor: pointer; font-family: 'Inter', sans-serif; font-weight: 600;
+    padding: 12px 20px; border-radius: 999px; font-size: 14px;
+    display: inline-flex; align-items: center; gap: 8px; transition: transform 0.15s ease;
+  }
+  .btn:active { transform: scale(0.97); }
+  .btn:focus-visible { outline: 2px solid #1C2541; outline-offset: 2px; }
+  .btn-ghost {
+    background: transparent; color: rgba(243,239,230,0.7);
+    border: 1px solid rgba(243,239,230,0.25) !important;
+  }
+  .row-center { display: flex; justify-content: center; margin-top: 26px; gap: 10px; flex-wrap: wrap; }
+  .upcoming-row {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 14px 4px; border-bottom: 1px solid rgba(28,37,65,0.08);
+  }
+  .upcoming-row:last-child { border-bottom: none; }
+  .upcoming-date { font-weight: 600; font-size: 14.5px; color: #1C2541; }
+  .upcoming-tag { font-size: 12.5px; margin-top: 2px; font-weight: 500; }
+  .section-label {
+    font-family: 'JetBrains Mono', monospace; font-size: 11px; letter-spacing: 0.1em;
+    text-transform: uppercase; color: #8A8578; margin: 0 0 6px 0; text-align: left;
+  }
+  .footnote { font-size: 12.5px; color: rgba(243,239,230,0.65); text-align: center; margin-top: 20px; line-height: 1.5; }
+  .icon-svg { flex-shrink: 0; }
+  @media (max-width: 480px) {
+    .card { padding: 28px 20px !important; }
+    .headline { font-size: 30px !important; }
+  }
+</style>
+</head>
+<body>
+  <div class="wrap">
+    <p class="eyebrow">Every 8 days</p>
+    <div style="height:14px"></div>
+
+    <div class="card">
+      <div class="beads" id="beads"></div>
+      <p class="eyebrow2" id="statusLine"></p>
+      <h1 class="headline" id="headline"></h1>
+      <div class="caption-box" id="captionBox">
+        <span id="captionIcon" class="icon-svg"></span>
+        <span class="caption-text" id="captionText"></span>
+      </div>
+      <div class="row-center" id="permissionRow"></div>
+    </div>
+
+    <div style="height:18px"></div>
+
+    <div class="card" style="text-align:left">
+      <p class="section-label">Next few market days</p>
+      <div id="upcomingList"></div>
+    </div>
+
+    <p class="footnote">
+      This app checks the date whenever it's open and notifies you if it's market day.
+      For it to check reliably, open it once a day — or install it to your home screen
+      so it's a one-tap habit.
+    </p>
+  </div>
+
+<script>
+const ICONS = {
+  rain: c => `<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="${c}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 13v8"/><path d="M8 13v8"/><path d="M12 15v8"/><path d="M20 16.58A5 5 0 0 0 18 7h-1.26A8 8 0 1 0 4 15.25"/></svg>`,
+  traffic: c => `<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="${c}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 17h2l-1.5-4.5a2 2 0 0 0-1.9-1.5H16"/><path d="M14 17H9"/><circle cx="7" cy="17" r="2"/><circle cx="17" cy="17" r="2"/><path d="M5 17H3v-4.5a2 2 0 0 1 .4-1.2L6 8h9l2.5 4"/></svg>`,
+  sun: c => `<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="${c}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/></svg>`
+};
+
+const CAPTIONS = [
+  { tag: 'rain', text: "Today's Market Day. Don't forget to bring an umbrella.", accent: '#3A4A7A' },
+  { tag: 'traffic', text: "Today's Market Day. Expect traffic on the roads.", accent: '#C64B3C' },
+  { tag: 'rain', text: "Today's Market Day. Rain is likely — carry a raincoat.", accent: '#3A4A7A' },
+  { tag: 'sun', text: "Today's Market Day. Skies may clear, but keep the umbrella close.", accent: '#E8A33D' },
+  { tag: 'traffic', text: "Today's Market Day. Roads will be busy — leave early.", accent: '#C64B3C' },
+];
+
+const ANCHOR = new Date('2026-07-06T00:00:00');
+const CYCLE_DAYS = 8;
+const MS_DAY = 24 * 60 * 60 * 1000;
+
+function startOfDay(d) { const x = new Date(d); x.setHours(0,0,0,0); return x; }
+function cycleIndexFor(date) {
+  const diff = Math.round((startOfDay(date) - startOfDay(ANCHOR)) / MS_DAY);
+  return Math.floor(diff / CYCLE_DAYS);
+}
+function marketDateForCycle(idx) { return new Date(ANCHOR.getTime() + idx * CYCLE_DAYS * MS_DAY); }
+function nextMarketDayFrom(today) {
+  const idx = cycleIndexFor(today);
+  let candidate = marketDateForCycle(idx);
+  if (startOfDay(candidate) < startOfDay(today)) candidate = marketDateForCycle(idx + 1);
+  return candidate;
+}
+function formatDate(d) {
+  return d.toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long' });
+}
+function captionFor(idx) { return CAPTIONS[((idx % CAPTIONS.length) + CAPTIONS.length) % CAPTIONS.length]; }
+function tagLabel(tag) { return tag === 'rain' ? 'Rain expected' : tag === 'traffic' ? 'Heavy traffic' : 'Mixed weather'; }
+
+function render() {
+  const today = startOfDay(new Date());
+  const nextMarket = nextMarketDayFrom(today);
+  const nextIdx = cycleIndexFor(nextMarket);
+  const daysUntil = Math.round((startOfDay(nextMarket) - startOfDay(today)) / MS_DAY);
+  const isToday = daysUntil === 0;
+  const caption = captionFor(nextIdx);
+
+  const beadsEl = document.getElementById('beads');
+  beadsEl.innerHTML = '';
+  for (let i = 0; i < CYCLE_DAYS; i++) {
+    const b = document.createElement('span');
+    b.className = 'bead' + (i === CYCLE_DAYS - 1 - daysUntil ? ' active' : '');
+    beadsEl.appendChild(b);
+  }
+
+  document.getElementById('statusLine').textContent = isToday
+    ? 'Today is market day'
+    : `${daysUntil} day${daysUntil === 1 ? '' : 's'} to go`;
+  document.getElementById('headline').textContent = formatDate(nextMarket);
+
+  const captionBox = document.getElementById('captionBox');
+  captionBox.style.borderColor = caption.accent;
+  document.getElementById('captionIcon').innerHTML = ICONS[caption.tag](caption.accent);
+  document.getElementById('captionText').textContent = caption.text;
+
+  const list = document.getElementById('upcomingList');
+  list.innerHTML = '';
+  for (let i = 0; i < 5; i++) {
+    const idx = nextIdx + i;
+    const date = marketDateForCycle(idx);
+    const c = captionFor(idx);
+    const row = document.createElement('div');
+    row.className = 'upcoming-row';
+    row.innerHTML = `
+      <div>
+        <div class="upcoming-date">${formatDate(date)}</div>
+        <div class="upcoming-tag" style="color:${c.accent}">${tagLabel(c.tag)}</div>
+      </div>
+      <span>${ICONS[c.tag](c.accent)}</span>
+    `;
+    list.appendChild(row);
+  }
+
+  renderPermissionRow();
+  return { isToday, caption };
+}
+
+function renderPermissionRow() {
+  const row = document.getElementById('permissionRow');
+  row.innerHTML = '';
+  const supported = 'Notification' in window;
+  const perm = supported ? Notification.permission : 'unsupported';
+
+  if (perm === 'granted') {
+    const badge = document.createElement('div');
+    badge.className = 'btn';
+    badge.style.background = 'rgba(107,143,113,0.15)';
+    badge.style.color = '#4A6B50';
+    badge.style.cursor = 'default';
+    badge.textContent = '🔔 Reminders on';
+    row.appendChild(badge);
+  } else if (!supported) {
+    const badge = document.createElement('div');
+    badge.className = 'btn';
+    badge.style.background = 'rgba(28,37,65,0.06)';
+    badge.style.color = '#8A8578';
+    badge.style.cursor = 'default';
+    badge.textContent = 'Notifications not supported here';
+    row.appendChild(badge);
+  } else {
+    const btn = document.createElement('button');
+    btn.className = 'btn';
+    btn.style.background = '#1C2541';
+    btn.style.color = '#F3EFE6';
+    btn.textContent = '🔔 Turn on reminders';
+    btn.onclick = async () => {
+      await Notification.requestPermission();
+      renderPermissionRow();
+    };
+    row.appendChild(btn);
+  }
+
+  const testBtn = document.createElement('button');
+  testBtn.className = 'btn btn-ghost';
+  testBtn.textContent = 'Send test notification';
+  testBtn.onclick = sendTestNotification;
+  row.appendChild(testBtn);
+}
+
+function sendTestNotification() {
+  if (!('Notification' in window)) {
+    alert('Notifications are not supported in this browser.');
+    return;
+  }
+  if (Notification.permission !== 'granted') {
+    alert('Turn on reminders first, then try the test.');
+    return;
+  }
+  const idx = cycleIndexFor(startOfDay(new Date()));
+  const caption = captionFor(idx);
+  new Notification('Market Day (test)', { body: caption.text, icon: 'icons/icon-192.png' });
+}
+
+async function checkAndNotifyIfDue() {
+  if (!('Notification' in window) || Notification.permission !== 'granted') return;
+  const today = startOfDay(new Date());
+  const { isToday, caption } = { isToday: cycleIndexFor(today) === cycleIndexFor(nextMarketDayFrom(today)) && Math.round((startOfDay(nextMarketDayFrom(today)) - today)/MS_DAY) === 0, caption: captionFor(cycleIndexFor(today)) };
+  if (!isToday) return;
+  const key = today.toISOString().slice(0, 10);
+  const lastNotified = localStorage.getItem('market-day-last-notified');
+  if (lastNotified === key) return;
+  new Notification('Market Day', { body: caption.text, icon: 'icons/icon-192.png' });
+  localStorage.setItem('market-day-last-notified', key);
+}
+
+render();
+checkAndNotifyIfDue();
+setInterval(() => { render(); checkAndNotifyIfDue(); }, 60 * 1000);
+
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('service-worker.js').catch(() => {});
+  });
+}
+</script>
+</body>
+</html>
